@@ -1,0 +1,113 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\BookmarkResource;
+use App\Http\Resources\UserMeResource;
+use App\Models\Bookmark;
+use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
+
+class BookmarkController extends Controller
+{
+
+    public function index()
+    {
+        try {
+            $bookmarks = auth()->user()->bookmarks;
+
+            if ($bookmarks->isEmpty()) {
+                return response()->json([
+                    'error' => false,
+                    'message' => 'No bookmarks found for this user',
+                ]);
+            }
+
+            // Ambil data user yang menyimpan skripsi
+            $user = $bookmarks->first()->user;
+
+            return response()->json([
+                'error' => false,
+                'message' => 'Success',
+                'user' => UserMeResource::make($user),
+                'bookmark_list' => BookmarkResource::collection($bookmarks),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Failed to fetch bookmarks: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function store(Request $request)
+    {
+        try {
+            $request->validate([
+                'skripsi_id' => 'required|exists:skripsi,id',
+            ]);
+
+            $bookmark = Bookmark::create([
+                'user_id' => auth()->id(),
+                'skripsi_id' => $request->skripsi_id,
+            ]);
+
+            return response()->json([
+                'error' => false,
+                'message' => 'Bookmark created successfully',
+                'data' => [
+                    'id' => $bookmark->id,
+                    'skripsi_id' => $bookmark->skripsi_id,
+                    'user_id' => $bookmark->user_id,
+                ],
+            ]);
+        } catch (QueryException $e) {
+            // Penanganan jika ada kesalahan saat menyimpan bookmark
+            return response()->json([
+                'error' => true,
+                'message' => 'Failed to create bookmark: ' . $e->getMessage(),
+            ], 500);
+        } catch (\Exception $e) {
+            // Penanganan kesalahan umum
+            return response()->json([
+                'error' => true,
+                'message' => 'Failed to create bookmark: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $bookmark = Bookmark::findOrFail($id);
+
+            if ($bookmark->user_id !== auth()->id()) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'This bookmark does not belong to you',
+                ], 401);
+            }
+
+            $bookmark->delete();
+
+            return response()->json([
+                'error' => false,
+                'message' => 'Bookmark deleted successfully',
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Bookmark not found',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Failed to delete bookmark: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+}
