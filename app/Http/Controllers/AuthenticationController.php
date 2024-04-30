@@ -28,7 +28,7 @@ class AuthenticationController extends Controller
             'error' => false,
             'message' => 'success',
             'data' => new UserRegisterResource($user),
-        ]);
+        ], 201);
     }
 
     public function login(Request $request)
