@@ -20,7 +20,6 @@ class SkripsiController extends Controller
                 'message' => 'success',
                 'total_items' => $skripsi->total(),
                 'current_page' => $skripsi->currentPage(),
-                'per_page' => $skripsi->perPage(),
                 'last_page' => $skripsi->lastPage(),
                 'data' => SkripsiResource::collection($skripsi)
             ]);
