@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->group(function () {
   Route::get('me', [AuthenticationController::class, 'me']);
-  Route::get('/logout', [AuthenticationController::class, 'logout']);
+  Route::post('/logout', [AuthenticationController::class, 'logout']);
 
   Route::get('/skripsi', [SkripsiController::class, 'index']);
   Route::get('/skripsi/{id}', [SkripsiController::class, 'show']);
