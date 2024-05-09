@@ -18,10 +18,13 @@ class SkripsiController extends Controller
             return response()->json([
                 'error' => false,
                 'message' => 'success',
-                'total_items' => $skripsi->total(),
-                'current_page' => $skripsi->currentPage(),
-                'last_page' => $skripsi->lastPage(),
-                'data' => SkripsiResource::collection($skripsi)
+                'data' => SkripsiResource::collection($skripsi),
+                'meta' => [
+                    'item_count' => $skripsi->count(),
+                    'current_page' => $skripsi->currentPage(),
+                    'total_items' => $skripsi->total(),
+                    'total_pages' => $skripsi->lastPage(),
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
