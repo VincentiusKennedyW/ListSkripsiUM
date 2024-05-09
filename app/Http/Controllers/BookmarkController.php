@@ -26,13 +26,9 @@ class BookmarkController extends Controller
                 ]);
             }
 
-            // Ambil data user yang menyimpan skripsi
-            $user = $bookmarks->first()->user;
-
             return response()->json([
                 'error' => false,
                 'message' => 'Success',
-                'user' => UserMeResource::make($user),
                 'bookmark_list' => BookmarkResource::collection($bookmarks),
             ]);
         } catch (\Exception $e) {
@@ -51,6 +47,17 @@ class BookmarkController extends Controller
                 'skripsi_id' => 'required|exists:skripsi,id',
             ]);
 
+            $existingBookmark = Bookmark::where('user_id', auth()->id())
+                ->where('skripsi_id', $request->skripsi_id)
+                ->first();
+
+            if ($existingBookmark) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Bookmark already exists for this skripsi',
+                ], 400);
+            }
+
             $bookmark = Bookmark::create([
                 'user_id' => auth()->id(),
                 'skripsi_id' => $request->skripsi_id,
@@ -61,18 +68,15 @@ class BookmarkController extends Controller
                 'message' => 'Bookmark created successfully',
                 'data' => [
                     'id' => $bookmark->id,
-                    'skripsi_id' => $bookmark->skripsi_id,
-                    'user_id' => $bookmark->user_id,
+                    'skripsi' => BookmarkResource::make($bookmark)->toArray($request),
                 ],
-            ]);
+            ], 201);
         } catch (QueryException $e) {
-            // Penanganan jika ada kesalahan saat menyimpan bookmark
             return response()->json([
                 'error' => true,
                 'message' => 'Failed to create bookmark: ' . $e->getMessage(),
             ], 500);
         } catch (\Exception $e) {
-            // Penanganan kesalahan umum
             return response()->json([
                 'error' => true,
                 'message' => 'Failed to create bookmark: ' . $e->getMessage(),
@@ -83,14 +87,12 @@ class BookmarkController extends Controller
     public function destroy($id)
     {
         try {
-            $bookmark = Bookmark::findOrFail($id);
-
-            if ($bookmark->user_id !== auth()->id()) {
-                return response()->json([
-                    'error' => true,
-                    'message' => 'This bookmark does not belong to you',
-                ], 401);
-            }
+            $userId = auth()->id();
+            $bookmark = Bookmark::where('skripsi_id', $id)
+                ->whereHas('skripsi', function ($query) use ($userId) {
+                    $query->where('user_id', $userId);
+                })
+                ->firstOrFail();
 
             $bookmark->delete();
 
