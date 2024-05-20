@@ -17,7 +17,9 @@ class BookmarkController extends Controller
     public function index()
     {
         try {
-            $bookmarks = auth()->user()->bookmarks;
+            /** @var $user \App\Models\User */
+            $user = auth()->user();
+            $bookmarks = $user->bookmarks()->orderBy('created_at', 'desc')->get();
 
             if ($bookmarks->isEmpty()) {
                 return response()->json([
@@ -38,7 +40,6 @@ class BookmarkController extends Controller
             ], 500);
         }
     }
-
 
     public function store(Request $request)
     {
