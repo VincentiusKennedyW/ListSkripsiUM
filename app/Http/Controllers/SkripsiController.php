@@ -13,14 +13,21 @@ class SkripsiController extends Controller
     {
         try {
             $perPage = $request->query('per_page', 10);
-            $skripsi = Skripsi::paginate($perPage);
+            $jurusan = $request->query('jurusan');
+
+            $skripsiQuery = Skripsi::query();
+
+            if ($jurusan) {
+                $skripsiQuery->where('jurusan', $jurusan);
+            }
+
+            $skripsi = $skripsiQuery->paginate($perPage);
 
             return response()->json([
                 'error' => false,
                 'message' => 'success',
                 'data' => SkripsiResource::collection($skripsi),
                 'meta' => [
-                    'item_count' => $skripsi->count(),
                     'current_page' => $skripsi->currentPage(),
                     'total_items' => $skripsi->total(),
                     'total_pages' => $skripsi->lastPage(),
@@ -138,7 +145,7 @@ class SkripsiController extends Controller
             return response()->json([
                 'error' => false,
                 'founded' => $foundedCount,
-                'skripsi' => SkripsiDetailResource::collection($skripsi),
+                'skripsi' => SkripsiResource::collection($skripsi),
             ]);
         } catch (\Exception $e) {
             return response()->json([
